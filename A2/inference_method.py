@@ -23,16 +23,22 @@ def pl_fc_entails(symbols_list : list, KB_clauses : list, known_symbols : list, 
         return - boolean value indicating whether KB entails the query
     """
 
-    ### START: Your code
+    count = {key: len(key.body) for key in KB_clauses}
+    inferred = dict.fromkeys(symbols_list, False)
+    agenda = deque(known_symbols)
 
-
-
-
-
-
-
-    return False # remove line if needed
-    ### END: Your code
+    while len(agenda) > 0:
+        p = agenda.pop()
+        if p == query:
+            return True
+        if not inferred[p]:
+            inferred[p] = True
+            for clause in KB_clauses:
+                if p in clause.body:
+                    count[clause] -= 1
+                    if count[clause] == 0:
+                        agenda.append(clause.conclusion)
+    return False
 
 
 # SAMPLE TEST
