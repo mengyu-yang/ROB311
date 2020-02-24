@@ -73,18 +73,46 @@ def planning(rrt_dubins, display_map=False):
 
     # LOOP for max iterations
     i = 0
+    path = []
     while i < rrt_dubins.max_iter:
         i += 1
 
+        goal_node = rrt_dubins.goal
+
         # Generate a random vehicle state (x, y, yaw)
+        rand_x = random.uniform(rrt_dubins.x_lim[0], rrt_dubins.x_lim[1])
+        rand_y = random.uniform(rrt_dubins.y_lim[0], rrt_dubins.y_lim[1])
+        rand_yaw = random.uniform(-math.pi, math.pi)
 
         # Find an existing node nearest to the random vehicle state
-        new_node = rrt_dubins.propogate(rrt_dubins.Node(0,0,0), rrt_dubins.Node(1,1,0)) #example of usage
+        dist = math.inf
+        closest = None
+        for node in rrt_dubins.node_list:
+            tmp_dist = (node.x - rand_x)**2 + (node.y - rand_y)**2
+            if tmp_dist < dist:
+                dist = tmp_dist
+                closest = node
+
+        # Propagate on closest node
+        new_node = rrt_dubins.propogate(closest, rrt_dubins.Node(rand_x, rand_y, rand_yaw))
 
         # Check if the path between nearest node and random state has obstacle collision
         # Add the node to nodes_list if it is valid
         if rrt_dubins.check_collision(new_node):
             rrt_dubins.node_list.append(new_node) # Storing all valid nodes
+
+            # Propagate from new
+            to_goal_node = rrt_dubins.propogate(new_node, goal_node)
+
+            # Check if goal node can be reached from new_node
+            if rrt_dubins.check_collision(to_goal_node):
+                # Goal node can be reached, trace parents to calculate path
+                trace_node = to_goal_node
+                while trace_node != None:
+                    path.append(trace_node)
+                    trace_node = trace_node.parent
+                path = path[::-1]
+                break
 
         # Draw current view of the map
         # PRESS ESCAPE TO EXIT
@@ -94,11 +122,10 @@ def planning(rrt_dubins, display_map=False):
         # Check if new_node is close to goal
         if True:
             print("Iters:", i, ", number of nodes:", len(rrt_dubins.node_list))
-            break
+
 
     if i == rrt_dubins.max_iter:
         print('reached max iterations')
 
     # Return path, which is a list of nodes leading to the goal
-
-    return None
+    return path

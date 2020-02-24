@@ -1,4 +1,6 @@
 import numpy as np
+
+
 ### WARNING: DO NOT CHANGE THE NAME OF THIS FILE, ITS FUNCTION SIGNATURE OR IMPORT STATEMENTS
 
 
@@ -30,14 +32,76 @@ def min_conflicts_n_queens(initialization: list) -> (list, int):
              num_steps - number of steps (i.e. reassignment of 1 queen's position) required to find the solution.
     """
 
+    def get_moves(N, position, board, subtract=False):
+        row, col = position
+
+        if subtract:
+            factor = -1
+        else:
+            factor = 1
+
+        for i in range(1, N):
+            # Up_right
+            if 0 <= row - i < N and 0 <= col + i < N:
+                board[row - i][col + i] += factor
+            # Up_left
+            if 0 <= row - i < N and 0 <= col - i < N:
+                board[row - i][col - i] += factor
+            # Down_right
+            if 0 <= row + i < N and 0 <= col + i < N:
+                board[row + i][col + i] += factor
+            # Down_left
+            if 0 <= row + i < N and 0 <= col - i < N:
+                board[row + i][col - i] += factor
+            # Right
+            if 0 <= row < N and 0 <= col + i < N:
+                board[row][col + i] += factor
+            # Left
+            if 0 <= row < N and 0 <= col - i < N:
+                board[row][col - i] += factor
+        return board
+
     N = len(initialization)
     solution = initialization.copy()
     num_steps = 0
     max_steps = 1000
 
+    # Initialize board
+    board = np.zeros([N, N])
+    for col, row in enumerate(solution):
+        board = get_moves(N, (row, col), board, subtract=False)
+
     for idx in range(max_steps):
-        ## YOUR CODE HERE
-        pass
+        # Check solution
+        flag = True
+        for i in range(0, N):
+            if not np.isin(0, board[:, i]):
+                flag = False
+                break
+        if flag:
+            return solution, num_steps
+
+        # Choose a random column containing conflicts
+        mask = np.array([])
+        for col, row in enumerate(solution):
+            if board[row][col] > 0:
+                mask = np.append(mask, col)
+        rand_col = np.int(np.random.choice(mask, 1))
+
+        # Store current position of the queen to be used later when we need to take away conflicts
+        prev = solution[rand_col]
+
+        # Choose random square with minimum conflicts in column to move to
+        indices = np.argwhere(board[:, rand_col] == np.amin(board[:, rand_col])).flatten()
+        solution[rand_col] = np.int(np.random.choice(indices, 1))
+
+        # Update board by first removing conflicts associated with previous queen position
+        board = get_moves(N, (prev, rand_col), board, subtract=True)
+        # Update board by adding conflicts created by new queen position
+        board = get_moves(N, (solution[rand_col], rand_col), board, subtract=False)
+
+        # Update step count
+        num_steps += 1
 
     return solution, num_steps
 
@@ -51,6 +115,7 @@ if __name__ == '__main__':
     # Use this after implementing initialize_greedy_n_queens.py
     assignment_initial = initialize_greedy_n_queens(N)
     # Plot the initial greedy assignment
+
     plot_n_queens_solution(assignment_initial)
 
     assignment_solved, n_steps = min_conflicts_n_queens(assignment_initial)
